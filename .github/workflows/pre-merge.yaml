@@ -1,0 +1,23 @@
+name: pre-merge
+on: workflow_dispatch  # manually trigger
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04  # TODO: redirect to a pyenv / poetry image
+    strategy:
+      matrix:
+        python-version: ["py38", "py310"]
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    - name: dependencies
+      run: echo "Installing dependencies"
+    - name: formatting
+      run: echo "Formatting"
+    - name: linting
+      run: echo "Linting"
+    - name: testing
+      run: echo "Testing"
