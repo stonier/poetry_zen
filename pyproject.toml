@@ -1,0 +1,61 @@
+[tool.poetry]
+name = "poetry_zen"
+version = "0.1.0"
+description = "noodly appendages reaching for the zen of poetry"
+authors = ["Daniel Stonier"]
+maintainers = ["Daniel Stonier <daniel.stonier@woven-planet.global>"]
+readme = "README.md"
+license = "Proprietary"
+homepage = "https://github.tmc-stargate.com/arene-driving/python-zen"
+repository = "https://github.tmc-stargate.com/arene-driving/python-zen"
+documentation = "https://github.tmc-stargate.com/arene-driving/python-zen"
+packages = [
+    { include = "poetry_zen" },
+]
+include = ["LICENSE"]
+classifiers = [
+    'Environment :: Console',
+    'Intended Audience :: Developers',
+    'Programming Language :: Python',
+    'Topic :: Software Development :: Libraries',
+    'Private :: Do Not Upload'  # Pypi will catch this and reject it if an upload is attempted
+]
+keywords=["zen", "poetry_zen"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+pydot = ">=1.4"
+
+[tool.poetry.group.dev.dependencies]
+tox = ">=3.26"
+tox-poetry-installer = {extras = ["poetry"], version = ">=0.9.0"}
+pytest = [
+    { version = "^6.2", python = "~3.6" },
+    { version = ">=7.1", python = "^3.7" }
+]
+pytest-console-scripts = ">=1.3"
+pytest-cov = ">=3.0.0"             # transitively depends on coverage[toml]
+
+[tool.poetry.group.format.dependencies]
+black = ">=22.8"
+
+[tool.poetry.group.static.dependencies]
+mypy = ">=0.971"
+
+[tool.poetry.group.lint.dependencies]
+# strongly recommended
+flake8 = ">=5.0"                  # combines pyflakes (errors) & pycodestyle (pep8 style)
+flake8-black = ">=0.3.3"          # formatting (integrates black --check)
+flake8-import-order = ">=0.18.1"  # import order
+flake8-docstrings = ">=1.6"       # docstrings (integrates pydocstyle)
+darglint = ">=1.8"                # checks docstrings match implementation
+# optional, these go above and beyond
+flake8-bandit = ">=4.1"           # secure code
+flake8-bugbear = ">=22.9"         # bugs & design not strictly pep8
+
+[tool.poetry.scripts]
+poetry-zen-hello = "poetry_zen.hello:main"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
