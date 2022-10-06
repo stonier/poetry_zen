@@ -6,18 +6,20 @@ jobs:
     runs-on: ubuntu-20.04  # TODO: redirect to a pyenv / poetry image
     strategy:
       matrix:
-        python-version: ["py38", "py310"]
+        python-minor-version: ["8", "10"]
 
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v4
       with:
-        python-version: '3.10'
-    - name: dependencies
+        python-version: "3.${{ matrix.python-version }}"
+    - name: Python Version
+      run: python3 --version
+    - name: Dependencies
       run: echo "Installing dependencies"
-    - name: formatting
+    - name: Formatting
       run: echo "Formatting"
-    - name: linting
+    - name: Linting
       run: echo "Linting"
-    - name: testing
-      run: echo "Testing"
+    - name: Tests
+      run: echo "Tests"
