@@ -13,13 +13,64 @@ jobs:
     - uses: actions/setup-python@v4
       with:
         python-version: "3.${{ matrix.python-minor-version }}"
+
+    - name: Capture Variables
+      run: echo "PYTHON_VERSION=$(python3 --version | sed s/Python\ //g)" >> $GITHUB_ENV
     - name: Python Version
-      run: python3 --version
-    - name: Dependencies
-      run: echo "Installing dependencies"
-    - name: Formatting
-      run: echo "Formatting"
-    - name: Linting
-      run: echo "Linting"
+      run: echo ${{env.PYTHON_VERSION}}
+
+    # Cache poetry (prep for the following install step)
+    # This prevents the workflow from installing Poetry every time,
+    # which can be slow. Note the use of the Poetry version
+    # number in the cache key, and the "-0" suffix: this allows you
+    # to invalidate the cache manually if/when you want to upgrade
+    # Poetry, or if something goes wrong. 
+    # TODO: use an env variable instead of this suffix
+    - name: Cache Poetry
+      uses: actions/cache@v2
+      with:
+        path: ~/.local
+        key: poetry-1.2.0-1
+
+    onfluen# Install Poetry. You could do this manually, or there are several actions that do this.
+    # `snok/install-poetry` seems to be minimal yet complete, and really just calls out to
+    # Poetry's default install script, which feels correct.
+    #
+    # The key configuration value here is `virtualenvs-in-project: true`: this creates the
+    # venv as a `.venv` in your testing directory, which allows the next step to cache it.
+    - uses: snok/install-poetry@v1
+      with:
+        version: 1.2.0
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+
+    # Cache your dependencies (i.e. all the stuff in your `pyproject.toml`). Note the cache
+    # key: if you're using multiple Python versions, or multiple OSes, you'd need to include
+    # them in the cache key. I'm not, so it can be simple and just depend on the poetry.lock.
+    - name: Cache Dependencies
+      id: cache-deps
+      uses: actions/cache@v2
+      with:
+        path: .venv
+        key: dependencies-${{ env.PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-1
+
+    # Install dependencies. `--no-root` means "install all dependencies but not the project
+    # itself", which is what you want to avoid caching _your_ code. The `if` statement
+    # ensures this only runs on a cache miss.
+    - name: Install Dependencies
+      run: poetry install --no-interaction --no-root
+      if: steps.cache-deps.outputs.cache-hit != 'true'
+
+    # Install your project. This isn't always necessary, but it's a good idea since
+    # it fully exercises pyproject.toml and makes, for example, console-scripts available.
+    - name: Install Project
+      run: poetry install --no-interaction
+
     - name: Tests
-      run: echo "Tests"
+      run: poetry run tox -e py3 ${{ matrix.python-minor-version }}
+    - name: Format
+      run: poetry run tox -e format
+    - name: Lint
+      run: poetry run tox -e lint
+    - name: Static
+      run: poetry run tox -e static
