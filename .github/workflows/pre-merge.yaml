@@ -1,23 +1,52 @@
 name: pre-merge
-on: workflow_dispatch  # manually trigger
+on:
+  pull_request:
+  workflow_dispatch:  # manually trigger
 
 jobs:
   build:
-    runs-on: ubuntu-20.04  # TODO: redirect to a pyenv / poetry image
+    runs-on: ubuntu-18.04
+    # container: ubuntu:20.04  # by default, fetches from docker hub
     strategy:
       matrix:
-        python-version: ["py38", "py310"]
+        python-version: ["3.8", "3.10"]
+        include:
+          - python-version: "3.8"
+            python-tox-version: "py38"
+          - python-version: "3.10"
+            python-tox-version: "py310"
 
     steps:
+    - name: OS Info
+      shell: bash
+      run: cat /etc/os-release
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v4
       with:
-        python-version: '3.10'
-    - name: dependencies
-      run: echo "Installing dependencies"
-    - name: formatting
-      run: echo "Formatting"
-    - name: linting
-      run: echo "Linting"
-    - name: testing
-      run: echo "Testing"
+        python-version: "${{ matrix.python-version }}"
+    - uses: ./.github/actions/install_poetry  # inspired by snok/install-poetry@v1
+      with:
+        version: 1.2.1
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+    - name: Cache Dependencies
+      id: cache-deps
+      uses: actions/cache@v2
+      with:
+        path: .venv
+        # ensure the cache key is unique to the matrix variants as well as poetry.lock
+        key: dependencies-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-1
+
+    - name: Install Dependencies
+      # --no-root: install all deps but not the project itself (avoid caching _your_ code)
+      run: poetry install --no-interaction --no-root
+      # only run on a cache miss
+      if: steps.cache-deps.outputs.cache-hit != 'true'
+
+    - name: Install Project
+      run: poetry install --no-interaction
+
+    - name: Tests
+      run: poetry run tox -e${{ matrix.python-tox-version }}
+    - name: Formatters, Linters, Mypy
+      run: poetry run tox -e check
