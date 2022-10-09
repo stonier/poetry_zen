@@ -27,7 +27,6 @@ $ poetry shell
 ```
 # ensure python 3.10 is installed
 $ tox -e py310     # tests + coverage
-$ tox -e format    # formats with black
-$ tox -e lint      # many linters
-$ tox -e static    # mypy typechecking
+$ tox -e format    # formats with ufmt
+$ tox -e check     # formatting, linting and mypy checkers
 ```

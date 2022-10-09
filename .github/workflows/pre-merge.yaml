@@ -1,76 +1,50 @@
 name: pre-merge
-on: workflow_dispatch  # manually trigger
+on:
+  pull_request:
+  workflow_dispatch:  # manually trigger
 
 jobs:
   build:
-    runs-on: ubuntu-20.04  # TODO: redirect to a pyenv / poetry image
+    runs-on: ["self-hosted", "linux", "x64", "shared-runner-ephemeral"]
     strategy:
       matrix:
-        python-minor-version: ["8", "10"]
+        python-version: ["3.8", "3.10"]
+        include:
+          - python-version: "3.8"
+            python-tox-version: "py38"
+          - python-version: "3.10"
+            python-tox-version: "py310"
 
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v4
       with:
-        python-version: "3.${{ matrix.python-minor-version }}"
-
-    - name: Capture Variables
-      run: echo "PYTHON_VERSION=$(python3 --version | sed s/Python\ //g)" >> $GITHUB_ENV
-    - name: Python Version
-      run: echo ${{env.PYTHON_VERSION}}
-
-    # Cache poetry (prep for the following install step)
-    # This prevents the workflow from installing Poetry every time,
-    # which can be slow. Note the use of the Poetry version
-    # number in the cache key, and the "-0" suffix: this allows you
-    # to invalidate the cache manually if/when you want to upgrade
-    # Poetry, or if something goes wrong. 
-    # TODO: use an env variable instead of this suffix
-    - name: Cache Poetry
-      uses: actions/cache@v2
+        python-version: "${{ matrix.python-version }}"
+    - uses: ./.github/actions/install_poetry  # inspired by snok/install-poetry@v1
       with:
-        path: ~/.local
-        key: poetry-1.2.0-1
-
-    # Install Poetry. You could do this manually, or there are several actions that do this.
-    # `snok/install-poetry` seems to be minimal yet complete, and really just calls out to
-    # Poetry's default install script, which feels correct.
-    #
-    # The key configuration value here is `virtualenvs-in-project: true`: this creates the
-    # venv as a `.venv` in your testing directory, which allows the next step to cache it.
-    - uses: snok/install-poetry@v1
-      with:
-        version: 1.2.0
+        version: 1.2.1
         virtualenvs-create: true
+        # enable caching of installed dependencies that live in the virtualenv
         virtualenvs-in-project: true
 
-    # Cache your dependencies (i.e. all the stuff in your `pyproject.toml`). Note the cache
-    # key: if you're using multiple Python versions, or multiple OSes, you'd need to include
-    # them in the cache key. I'm not, so it can be simple and just depend on the poetry.lock.
-    - name: Cache Dependencies
+    - name: Cache Installed Dependencies
       id: cache-deps
       uses: actions/cache@v2
       with:
         path: .venv
-        key: dependencies-${{ env.PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-1
+        # ensure the cache key is unique to the matrix variants as well as poetry.lock
+        key: dependencies-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-1
 
-    # Install dependencies. `--no-root` means "install all dependencies but not the project
-    # itself", which is what you want to avoid caching _your_ code. The `if` statement
-    # ensures this only runs on a cache miss.
     - name: Install Dependencies
-      run: poetry install --no-interaction --no-root
+      # --no-root: install all deps but not the project itself (avoid caching _your_ code)
+      run: cd poetry_zen && poetry install --no-interaction --no-root
+      # only run on a cache miss
       if: steps.cache-deps.outputs.cache-hit != 'true'
 
-    # Install your project. This isn't always necessary, but it's a good idea since
-    # it fully exercises pyproject.toml and makes, for example, console-scripts available.
     - name: Install Project
-      run: poetry install --no-interaction
+      run: cd poetry_zen && poetry install --no-interaction
 
     - name: Tests
-      run: poetry run tox -e py3 ${{ matrix.python-minor-version }}
-    - name: Format
-      run: poetry run tox -e format
-    - name: Lint
-      run: poetry run tox -e lint
-    - name: Static
-      run: poetry run tox -e static
+      run: cd poetry_zen && poetry run tox -e${{ matrix.python-tox-version }}
+    - name: Formatters, Linters, Mypy
+      run: cd poetry_zen && poetry run tox -e check

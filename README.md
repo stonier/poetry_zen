@@ -155,15 +155,42 @@ Use the following config and run it with `poetry run poetry-zen-hello`.
 poetry-zen-hello = "poetry_zen.hello:main"
 ```
 
-**Dependencies**
+**Python/Platform Dependencies**
 
-Despite being declarative, there are built-in mechansims for declaring dependencies that in turn, depend on
-a python, or platform:
+Despite being declarative, there are built-in mechansims for declaring dependencies that in turn, depend on a python, or platform:
 
 ```
 [tool.poetry.dependencies]
 pathlib2 = { version = "^2.2", markers = "python_version ~= '2.7' or sys_platform == 'win32'"
 ```
+
+**Runtime vs Dev Dependencies**
+
+Pip and Setuptools typically make use of `setup.py`'s `install_requires`, `extras_require` and `pip`'s `requirements.txt`, `requirements-dev.txt` to sparate runtime and development (usually for testing) dependencies. Properly used, `setup.py` defines version ranges for dependencies and `requirements*` the pinned snapshots.
+
+Poetry has a similar capability. `pyproject.toml` allows you to divide dependencies into groups:
+```
+# package (runtime) dependencies
+[tool.poetry.dependencies]
+...
+
+# development and testing dependencies
+[tool.poetry.group.dev.dependencies]
+...
+```
+At a minimum, this is all you need. You can refine the groups farther for your convenience, but basically these will all be dependencies required beyond package/runtime. Refer to [pyproject.toml][pyproject.toml] for examples.
+
+The `poetry.lock` file snapshots the dependencies. Just like `requirements.txt` you should not edit this file (nor do you want to - take a peek, it contains much more information than `requirements.txt` holds, which makes it far less human editable). `poetry.lock` is however, a single file that holds all snapshot information. Use [poetry install](https://python-poetry.org/docs/cli/#install) to install specific groups if desired.
+
+You get some additional magic for free with `poetry.lock`. Since the entire
+resolution system takes into account the various python versions you have targeted, `poetry.lock` is able to correctly represent your snapshot, even when
+working across multiple python versions.
+
+**Extras**
+
+Both setuptools and poetry have the ability to specify optional 'extras' that can be installed with a released version of the project.
+
+TODO: how
 
 ## Final Thoughts
 
