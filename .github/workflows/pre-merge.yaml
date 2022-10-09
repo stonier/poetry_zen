@@ -25,7 +25,6 @@ jobs:
       with:
         python-version: "${{ matrix.python-version }}"
     - uses: ./.github/actions/install_poetry  # inspired by snok/install-poetry@v1
-      id: install-poetry
       with:
         version: 1.2.1
         virtualenvs-create: true
@@ -42,7 +41,7 @@ jobs:
       # --no-root: install all deps but not the project itself (avoid caching _your_ code)
       run: poetry install --no-interaction --no-root
       # only run on a cache miss
-      if: steps.install-poetry.outputs.cache-hit != 'true'
+      if: steps.cache-deps.outputs.cache-hit != 'true'
 
     - name: Install Project
       run: poetry install --no-interaction
