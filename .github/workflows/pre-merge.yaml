@@ -6,7 +6,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-18.04
-    container: ubuntu:20.04  # by default, fetches from docker hub
+    # container: ubuntu:20.04  # by default, fetches from docker hub
     strategy:
       matrix:
         python-version: ["3.8", "3.10"]
@@ -17,22 +17,20 @@ jobs:
             python-tox-version: "py310"
 
     steps:
+    - name: OS Info
+      shell: bash
+      run: cat /etc/os-release
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v4
       with:
         python-version: "${{ matrix.python-version }}"
-    - name: OS Info
-      shell: bash
-      run: cat /etc/os-release
-
     - uses: ./.github/actions/install_poetry  # inspired by snok/install-poetry@v1
+      id: install-poetry
       with:
         version: 1.2.1
         virtualenvs-create: true
-        # enable caching of installed dependencies that live in the virtualenv
         virtualenvs-in-project: true
-
-    - name: Cache Installed Dependencies
+    - name: Cache Dependencies
       id: cache-deps
       uses: actions/cache@v2
       with:
@@ -42,14 +40,14 @@ jobs:
 
     - name: Install Dependencies
       # --no-root: install all deps but not the project itself (avoid caching _your_ code)
-      run: cd poetry_zen && poetry install --no-interaction --no-root
+      run: poetry install --no-interaction --no-root
       # only run on a cache miss
-      if: steps.cache-deps.outputs.cache-hit != 'true'
+      if: steps.install-poetry.outputs.cache-hit != 'true'
 
     - name: Install Project
-      run: cd poetry_zen && poetry install --no-interaction
+      run: poetry install --no-interaction
 
     - name: Tests
-      run: cd poetry_zen && poetry run tox -e${{ matrix.python-tox-version }}
+      run: poetry run tox -e${{ matrix.python-tox-version }}
     - name: Formatters, Linters, Mypy
-      run: cd poetry_zen && poetry run tox -e check
+      run: poetry run tox -e check
