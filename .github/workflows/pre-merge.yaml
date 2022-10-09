@@ -5,7 +5,8 @@ on:
 
 jobs:
   build:
-    runs-on: ["self-hosted", "linux", "x64", "shared-runner-ephemeral"]
+    runs-on: ubuntu-18.04
+    container: ubuntu-20.04
     strategy:
       matrix:
         python-version: ["3.8", "3.10"]
@@ -27,6 +28,9 @@ jobs:
         # enable caching of installed dependencies that live in the virtualenv
         virtualenvs-in-project: true
 
+    - name: OS Info
+      shell: bash
+      run: cat /etc/os-release
     - name: Cache Installed Dependencies
       id: cache-deps
       uses: actions/cache@v2
