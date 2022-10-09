@@ -6,7 +6,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-18.04
-    container: ubuntu-20.04
+    container: ubuntu:20.04  # by default, fetches from docker hub
     strategy:
       matrix:
         python-version: ["3.8", "3.10"]
