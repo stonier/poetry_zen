@@ -32,7 +32,7 @@ jobs:
         path: ~/.local
         key: poetry-1.2.0-1
 
-    onfluen# Install Poetry. You could do this manually, or there are several actions that do this.
+    # Install Poetry. You could do this manually, or there are several actions that do this.
     # `snok/install-poetry` seems to be minimal yet complete, and really just calls out to
     # Poetry's default install script, which feels correct.
     #
